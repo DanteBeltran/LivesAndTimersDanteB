@@ -27,6 +27,7 @@ local correctAnswer
 local operator
 local counter = 0
 local counterText
+local gameOverScreen
 
 -- variables for the timer
 local totalSeconds = 10
@@ -41,11 +42,62 @@ local heart2
 local heart3
 local heart4
 
+-------------------------------------------------------------------------------------
+-- Sounds
+-------------------------------------------------------------------------------------
+
+-- load sounds
+local gameOver = audio.loadSound("Sounds/Game Over Sound.mp3")
+local correctSound = audio.loadSound("Sounds/Correct Sound.mp3")
+local wrongBuzz = audio.loadSound("Sounds/Wrong Buzz.mp3")
 
 
 -------------------------------------------------------------------------------------
 -- LOCAL FUNCTIONS
 -------------------------------------------------------------------------------------
+
+local function GameOver()
+	-- when lives equal zero display game over screen
+	if (lives == 0) then
+		gameOverScreen.isVisible = true
+		numericField.isVisible = false
+		clockText.isVisible = false
+		questionObject.isVisible = false
+		audio.play(gameOver)
+	end
+end
+
+local function UpdateHeart()
+	-- hearts
+	if (lives == 4) then 
+		heart1.isVisible = true
+		heart2.isVisible = true
+		heart3.isVisible = true
+		heart4.isVisible = true 
+	elseif (lives == 3) then 
+		heart1.isVisible = true
+		heart2.isVisible = true
+		heart3.isVisible = true
+		heart4.isVisible = false 
+	elseif (lives == 2) then 
+		heart1.isVisible = true
+		heart2.isVisible = true
+		heart3.isVisible = false
+		heart4.isVisible = false
+	elseif (lives == 1) then 
+		heart1.isVisible = true
+		heart2.isVisible = false
+		heart3.isVisible = false
+		heart4.isVisible = false
+	elseif (lives == 0) then 
+		heart1.isVisible = false
+		heart2.isVisible = false
+		heart3.isVisible = false
+		heart4.isVisible = false
+		GameOver()
+	end	
+end
+
 local function UpdateTime()
 	-- decrement the number of seconds
 	secondsLeft = secondsLeft - 1
@@ -57,23 +109,11 @@ local function UpdateTime()
 		-- reset the number of seconds left
 		secondsLeft = totalSeconds
 		lives = lives -1
-
-		--*** IF THERE ARE NO LIVES LEFT, PLAY A LOSE SOUND, SHOW A YOU LOSE IMAGE 
-		-- AND CANCEL THE TIMER AND REMOVE THE FOURTH HEART BY MAKING IT INVISIBLE
-		if (lives == 3) then 
-			heart4.isVisible = false
-		elseif (lives == 2) then
-			heart3.isVisible = false
-		elseif (lives == 1) then
-			heart2.isVisible = false
-		elseif (lives == 0) then
-			heart1.isVisible = false
-
-		end
-
-		AskQuestion()
+		UpdateHeart()
 	end
 end
+
+
 
 -- function that calls the timer
 local function StartTimer()
@@ -161,17 +201,17 @@ local function NumericFeildListener( event )
 			correctObject.isVisible = true
 			timer.performWithDelay(3000, HideCorrect)
 			event.target.text = ""
-			counter = counter + 1
-			-- display counter
-			counterText = display.newText(""..counter, display.contentWidth/2,
-			 display.contentHeight/4 * 3, nil, 50)
-			counterText:setTextColor (190/255, 100/255, 30/255)
+			audio.play(correctSound)
+			secondsLeft = totalSeconds
 			
 		else
 			incorrectObject.isVisible = true
 			timer.performWithDelay(3000, HideIncorrect) 
 			event.target.text = ""
-
+			secondsLeft = totalSeconds
+			audio.play(wrongBuzz)
+			lives = lives -1
+			UpdateHeart()
 		end
 	end
 end
@@ -221,6 +261,11 @@ heart4 = display.newImageRect("Images/heart.png", 100, 100)
 heart4.x = display.contentWidth * 4 / 8
 heart4.y = display.contentHeight * 1 / 7
 
+-- create the game over image
+gameOverScreen = display.newImageRect("Images/gameOver.png", 1000, 1000)
+gameOverScreen.x = display.contentWidth/2
+gameOverScreen.y = display.contentHeight/2
+gameOverScreen.isVisible = false
 
 
 ---------------------------------------------------------------------------------------
@@ -228,5 +273,8 @@ heart4.y = display.contentHeight * 1 / 7
 ---------------------------------------------------------------------------------------
 
 -- call the function to ask the question
-AskQuestion()
+UpdateHeart()
+GameOver()
 StartTimer()
+AskQuestion()
+UpdateTime()
